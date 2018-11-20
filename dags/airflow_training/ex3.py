@@ -35,7 +35,7 @@ branching = BranchPythonOperator(
     task_id='branching', python_callable=__determine_who_to_email, provide_context=True, dag=dag
 )
 
-for person in weekday_person_to_email.values():
+for person in set(weekday_person_to_email.values()):
     branching >> DummyOperator(task_id=person, dag=dag)
 
 t1 = BashOperator(
