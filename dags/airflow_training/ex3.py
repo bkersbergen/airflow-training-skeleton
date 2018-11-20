@@ -59,5 +59,6 @@ final_task = DummyOperator(
 )
 
 for name in set(weekday_person_to_email.values()):
-    email_taks = DummyOperator(task_id="email_{}".format(name), dag=dag)
+    task_id = "email_{}".format(name)
+    email_taks = DummyOperator(task_id=task_id, dag=dag)
     branching >> email_taks >> final_task
