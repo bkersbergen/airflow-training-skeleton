@@ -16,15 +16,15 @@ t1 = BashOperator(
 )
 
 t2 = BashOperator(
-    task_id="wait 5", bash_command="sleep 5", dag=dag
+    task_id="wait_5", bash_command="sleep 5", dag=dag
 )
 
 t3 = BashOperator(
-    task_id="wait 10", bash_command="sleep 10", dag=dag
+    task_id="wait_10", bash_command="sleep 10", dag=dag
 )
 
 t4 = BashOperator(
-    task_id="wait 1", bash_command="sleep 1", dag=dag
+    task_id="wait_1", bash_command="sleep 1", dag=dag
 )
 
 t5 = BashOperator(
