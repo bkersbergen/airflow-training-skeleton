@@ -11,6 +11,20 @@ dag = DAG(
 )
 
 
+def __my_python_function(execution_date, **context):
+    print(execution_date)
+    print(context['ds'])
+    print(context['params']['mykey'])
+
+
+pp = PythonOperator(
+    task_id='my function',
+    python_callable=__my_python_function,
+    params={"mykey": 5},
+    provide_context=True,
+    dag=dag
+)
+
 t1 = BashOperator(
     task_id="print_exec_date", bash_command="echo {{ execution_date }}", dag=dag
 )
@@ -31,10 +45,5 @@ t5 = BashOperator(
     task_id="print_done", bash_command="echo done", dag=dag
 )
 
-t1 >> t2
-t1 >> t3
-t1 >> t4
-t2 >> t5
-t3 >> t5
-t4 >> t5
+t1 >> [t2, t3, t4] >> t5
 
