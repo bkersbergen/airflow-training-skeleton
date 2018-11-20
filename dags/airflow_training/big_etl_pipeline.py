@@ -6,7 +6,7 @@ from airflow.operators.python_operator import BranchPythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOperator
 
-from dags.airflow_training.operators.postgres_to_gcs import PostgresToGoogleCloudStorageOperator
+from operators.postgres_to_gcs import PostgresToGoogleCloudStorageOperator
 
 args = {"owner": "bkersbergen",
         "start_date": airflow.utils.dates.days_ago(3)
