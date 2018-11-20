@@ -11,11 +11,7 @@ from airflow.contrib.operators.postgres_to_gcs_operator import PostgresToGoogleC
 args = {"owner": "bkersbergen",
         "start_date": airflow.utils.dates.days_ago(3)
         }
-# opgegeven via de airflow admin webui admin interface
-# host:178.62.227.89
-# username: gdd
-# db: gdd
-# pass: supergeheim123abc!
+# user en pass opgegeven via de airflow admin webui admin interface
 
 dag = DAG(
     dag_id="ex4",
