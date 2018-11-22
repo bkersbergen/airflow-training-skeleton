@@ -8,26 +8,26 @@ print('working for date:{}'.format(dt))
 
 spark = SparkSession.builder.getOrCreate()
 
-spark.read.json(
+registry = spark.read.json(
     "gs://mr_ds/price_paid_uk/*/registry.json"
-).withColumn(
+)
+print('registry count:{}'.format(registry.count()))
+
+registry.withColumn(
     "transfer_date", F.col("transfer_date").cast("timestamp").cast("date")
 ).createOrReplaceTempView(
     "land_registry_price_paid_uk"
 )
 
 
-spark.read.json("gs://mr_ds/currency/*.json").withColumn(
+currency = spark.read.json("gs://mr_ds/currency/*.json")
+print('currency count:{}'.format(currency.count()))
+
+
+currency.withColumn(
     "date", F.col("date").cast("date")
 ).createOrReplaceTempView("currencies")
 
-
-a = spark.read.json(
-    "gs://mr_ds/price_paid_uk/*/registry.json"
-)
-b = spark.read.json("gs://mr_ds/currency/*.json").withColumn(
-    "date", F.col("date").cast("date")
-)
 
 
 # Do some aggregations and write it back to Cloud Storage
@@ -63,5 +63,9 @@ aggregation = spark.sql(
         dt
     )
 )
+
+
+qty_output_records = aggregation.count()
+print('qty_output_records:{}'.format(qty_output_records))
 
 aggregation.write.mode("overwrite").partitionBy("transfer_date").parquet("gs://mr_ds/average_prices/")
