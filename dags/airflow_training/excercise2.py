@@ -18,7 +18,7 @@ def __my_python_function(execution_date, **context):
 
 
 pp = PythonOperator(
-    task_id='my function',
+    task_id='my_function',
     python_callable=__my_python_function,
     params={"mykey": 5},
     provide_context=True,

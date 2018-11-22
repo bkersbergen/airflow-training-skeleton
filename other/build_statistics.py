@@ -9,7 +9,7 @@ print(dt)
 spark = SparkSession.builder.getOrCreate()
 
 spark.read.json(
-    "gs://airflow-training-data/land_registry_price_paid_uk/*/*.json"
+    "gs://mr_ds/price_paid_uk/*/registry.json"
 ).withColumn(
     "transfer_date", col("transfer_date").cast("timestamp").cast("date")
 ).createOrReplaceTempView(
@@ -83,5 +83,5 @@ aggregation = spark.sql(
 (
     aggregation.write.mode("overwrite")
     .partitionBy("transfer_date")
-    .parquet("gs://airflow-training-data/average_prices/")
+    .parquet("gs://mr_ds/average_prices/")
 )

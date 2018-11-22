@@ -1,6 +1,7 @@
 import airflow
 from airflow import DAG
-from airflow.contrib.operators.dataproc_operator import DataprocClusterCreateOperator
+from airflow.contrib.operators.dataproc_operator import DataprocClusterCreateOperator, DataProcPySparkOperator, \
+    DataprocClusterDeleteOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.python_operator import BranchPythonOperator
@@ -8,6 +9,13 @@ from airflow.utils.trigger_rule import TriggerRule
 from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOperator
 
 from airflow.contrib.operators.postgres_to_gcs_operator import PostgresToGoogleCloudStorageOperator
+
+'''
+Toy airflow pipeline that I wrote at the airflow training
+Common tasks are in this pipeline like reading postgres, storing in google storage, create and delete dataproc cluster etc.
+
+
+'''
 
 args = {"owner": "bkersbergen",
         "start_date": airflow.utils.dates.days_ago(3)
@@ -30,17 +38,37 @@ psql_to_gcs = PostgresToGoogleCloudStorageOperator(
     dag=dag
 )
 
-cluster_name = "mr_ds-{{ ds }}"
+cluster_name = "mrds{{ ds_nodash }}"
 gcs_project_id = "airflowbolcom-29ec97aeb308c0dd"
 
 create_cluster = DataprocClusterCreateOperator(
     task_id="create_dataproc_cluster",
     cluster_name=cluster_name,
     project_id=gcs_project_id,
-    num_workers=2,
     zone="europe-west4-a",
+    num_workers=2,
     dag=dag
 )
 
+build_statistics = DataProcPySparkOperator(
+    task_id="build_statistics",
+    main="gs://mr_ds/pyspark/build_statistics.py",
+    cluster_name=cluster_name,
+    project_id=gcs_project_id,
+    zone="europe-west4-a",
+    arguments=["{{ ds }}"],
+    dag=dag
+)
 
-psql_to_gcs >> create_cluster
+delete_cluster = DataprocClusterDeleteOperator(
+    task_id="delete_dataproc_cluster",
+    cluster_name=cluster_name,
+    project_id=gcs_project_id,
+    zone="europe-west4-a",
+    trigger_rule=TriggerRule.ALL_DONE,   # always execute the deletion of the cluster even if the 'build_statistics' fail
+    dag=dag
+)
+
+psql_to_gcs >> create_cluster >> build_statistics >> delete_cluster
+
+
