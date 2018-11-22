@@ -35,7 +35,7 @@ spark.read.json(
 #  |-- transaction: string (nullable = true)
 #  |-- transfer_date: double (nullable = true)
 
-spark.read.json("gs://airflow-training-data/currency/*.json").withColumn(
+spark.read.json("gs://mr_ds/currency/*.json").withColumn(
     "date", col("date").cast("date")
 ).createOrReplaceTempView("currencies")
 

@@ -10,10 +10,13 @@ from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOper
 
 from airflow.contrib.operators.postgres_to_gcs_operator import PostgresToGoogleCloudStorageOperator
 
+from airflow_training.operators.HttpToGcsOperator import HttpToGcsOperator
+
 '''
 Toy airflow pipeline that I wrote at the airflow training
 Common tasks are in this pipeline like reading postgres, storing in google storage, create and delete dataproc cluster etc.
 
+In PyCharm 'mark directory as source directory /'dags'
 
 '''
 
@@ -28,7 +31,6 @@ dag = DAG(
     schedule_interval="0 0 * * *"
 )
 
-
 psql_to_gcs = PostgresToGoogleCloudStorageOperator(
     task_id="read_postgres",
     sql="SELECT * FROM land_registry_price_paid_uk WHERE transfer_date = '{{ ds }}'",
@@ -39,12 +41,12 @@ psql_to_gcs = PostgresToGoogleCloudStorageOperator(
 )
 
 cluster_name = "mrds{{ ds_nodash }}"
-gcs_project_id = "airflowbolcom-29ec97aeb308c0dd"
+project_id = "airflowbolcom-29ec97aeb308c0dd"
 
 create_cluster = DataprocClusterCreateOperator(
     task_id="create_dataproc_cluster",
     cluster_name=cluster_name,
-    project_id=gcs_project_id,
+    project_id=project_id,
     zone="europe-west4-a",
     num_workers=2,
     dag=dag
@@ -54,8 +56,6 @@ build_statistics = DataProcPySparkOperator(
     task_id="build_statistics",
     main="gs://mr_ds/pyspark/build_statistics.py",
     cluster_name=cluster_name,
-    project_id=gcs_project_id,
-    zone="europe-west4-a",
     arguments=["{{ ds }}"],
     dag=dag
 )
@@ -63,12 +63,24 @@ build_statistics = DataProcPySparkOperator(
 delete_cluster = DataprocClusterDeleteOperator(
     task_id="delete_dataproc_cluster",
     cluster_name=cluster_name,
-    project_id=gcs_project_id,
+    project_id=project_id,
     zone="europe-west4-a",
-    trigger_rule=TriggerRule.ALL_DONE,   # always execute the deletion of the cluster even if the 'build_statistics' fail
+    trigger_rule=TriggerRule.ALL_DONE,  # always execute the deletion of the cluster even if the 'build_statistics' fail
     dag=dag
 )
 
-psql_to_gcs >> create_cluster >> build_statistics >> delete_cluster
+currency = "EUR"
+get_valuta_currency = HttpToGcsOperator(
+    task_id="get_valuta_currency_" + currency,
+    method="GET",
+    endpoint="/airflow-training-transform-valutas?date={{ ds }}&from=GBP&to=" + currency,
+    http_conn_id="airflow-training-currency-http",
+    gcs_path="currency/{{ ds }}-" + currency + ".json",
+    bucket="mr_ds",
+    dag=dag,
+)
 
+dataproc_stats_pipeline = [create_cluster >> build_statistics >> delete_cluster]
+psql_to_gcs >> dataproc_stats_pipeline
+get_valuta_currency >> dataproc_stats_pipeline
 
