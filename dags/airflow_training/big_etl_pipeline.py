@@ -1,5 +1,6 @@
 import airflow
 from airflow import DAG
+from airflow.contrib.operators.dataproc_operator import DataprocClusterCreateOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.python_operator import BranchPythonOperator
@@ -29,4 +30,17 @@ psql_to_gcs = PostgresToGoogleCloudStorageOperator(
     dag=dag
 )
 
+cluster_name = "mr_ds-{{ ds }}"
+gcs_project_id = "airflowbolcom-29ec97aeb308c0dd"
 
+create_cluster = DataprocClusterCreateOperator(
+    task_id="create_dataproc_cluster",
+    cluster_name=cluster_name,
+    project_id=gcs_project_id,
+    num_workers=2,
+    zone="europe-west4-a",
+    dag=dag
+)
+
+
+psql_to_gcs >> create_cluster
