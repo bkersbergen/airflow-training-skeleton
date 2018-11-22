@@ -1,5 +1,6 @@
 import airflow
 from airflow import DAG
+from airflow.contrib.operators.dataflow_operator import DataFlowPythonOperator
 from airflow.contrib.operators.dataproc_operator import DataprocClusterCreateOperator, DataProcPySparkOperator, \
     DataprocClusterDeleteOperator
 from airflow.operators.dummy_operator import DummyOperator
@@ -77,6 +78,14 @@ get_valuta_currency = HttpToGcsOperator(
     http_conn_id="airflow-training-currency-http",
     gcs_path="currency/{{ ds }}-" + currency + ".json",
     bucket="mr_ds",
+    dag=dag,
+)
+
+'''This DataFlowPythonOperator requires py2.7 but this project is py3.6, therefore this fails to run'''
+write_prices_to_bq = DataFlowPythonOperator(
+    task_id="write_prices_to_bq",
+    dataflow_default_options={"project": project_id, "region": "europe-west1"},
+    py_file="gs://mr_ds/pyspark/dataflow_job.py",
     dag=dag,
 )
 

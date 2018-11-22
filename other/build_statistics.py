@@ -1,50 +1,34 @@
 import sys
 
-from pyspark.sql.functions import col
+import pyspark.sql.functions as F
 from pyspark.sql import SparkSession
 
 dt = sys.argv[1]
-print(dt)
+print('working for date:{}'.format(dt))
 
 spark = SparkSession.builder.getOrCreate()
 
 spark.read.json(
     "gs://mr_ds/price_paid_uk/*/registry.json"
 ).withColumn(
-    "transfer_date", col("transfer_date").cast("timestamp").cast("date")
+    "transfer_date", F.col("transfer_date").cast("timestamp").cast("date")
 ).createOrReplaceTempView(
     "land_registry_price_paid_uk"
 )
 
-# >>> df.printSchema()
-# root
-#  |-- city: string (nullable = true)
-#  |-- county: string (nullable = true)
-#  |-- district: string (nullable = true)
-#  |-- duration: string (nullable = true)
-#  |-- locality: string (nullable = true)
-#  |-- newly_built: boolean (nullable = true)
-#  |-- paon: string (nullable = true)
-#  |-- postcode: string (nullable = true)
-#  |-- ppd_category_type: string (nullable = true)
-#  |-- price: double (nullable = true)
-#  |-- property_type: string (nullable = true)
-#  |-- record_status: string (nullable = true)
-#  |-- saon: string (nullable = true)
-#  |-- street: string (nullable = true)
-#  |-- transaction: string (nullable = true)
-#  |-- transfer_date: double (nullable = true)
 
 spark.read.json("gs://mr_ds/currency/*.json").withColumn(
-    "date", col("date").cast("date")
+    "date", F.col("date").cast("date")
 ).createOrReplaceTempView("currencies")
 
-# >>> df.printSchema()
-# root
-#  |-- conversion_rate: double (nullable = true)
-#  |-- date: string (nullable = true)
-#  |-- from: string (nullable = true)
-#  |-- to: string (nullable = true)
+
+a = spark.read.json(
+    "gs://mr_ds/price_paid_uk/*/registry.json"
+)
+b = spark.read.json("gs://mr_ds/currency/*.json").withColumn(
+    "date", F.col("date").cast("date")
+)
+
 
 # Do some aggregations and write it back to Cloud Storage
 aggregation = spark.sql(
@@ -80,8 +64,4 @@ aggregation = spark.sql(
     )
 )
 
-(
-    aggregation.write.mode("overwrite")
-    .partitionBy("transfer_date")
-    .parquet("gs://mr_ds/average_prices/")
-)
+aggregation.write.mode("overwrite").partitionBy("transfer_date").parquet("gs://mr_ds/average_prices/")
